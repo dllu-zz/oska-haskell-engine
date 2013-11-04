@@ -5,11 +5,13 @@
 --Project 1 CPSC 312
 
 -- ["wwww","---","--","---","bbbb"]
+-- ["wwww","---","--","---","bbbb"]
+-- ["----","---","-w","-b-","b-bb"]
 
 
 oska_a7e7::[String] -> Char -> Int -> [String]
 oska_a7e7 state who depth
-        | valid_a7e7 state      = goodformat2badformat_a7e7 (snd (engine_a7e7 (badformat2goodformat_a7e7 state) (conv_wb12_a7e7 who) depth))
+        | valid_a7e7 state      = goodformat2badformat_a7e7 (engine_wrapper_a7e7 (badformat2goodformat_a7e7 state) (conv_wb12_a7e7 who) depth)
         | otherwise             = error "Invalid state"
 
 -- a valid state must be a list of strings of valid lengths
@@ -93,28 +95,29 @@ disp_a7e7 state n = do
 -- returns a list of boards that are reachable in one ply by the specified player
 -- assumes board is rotated such that all pieces only move right and down
 movegen_a7e7::[Int]->Int->[[Int]]
-movegen_a7e7 state who = moveright ++ eatright ++ movedown ++ eatdown 
-        where n = length state
-              nn = (round (sqrt (fromIntegral (length state))))
-              moveright = [a x ++ b x | x <- [0..(n-3)], canmoveright x]
-                where canmoveright x = x/=((div n 2)-1) && (state!!x) == who && (state!!(x+1)) == 0
-                      a x = take x state -- we swap the x and x+1 position
-                      b x = 0:who:(drop (x+2) state)
-              movedown = [a x ++ b x ++ c x | x <- [0..(n-nn-2)], canmovedown x]
-                where canmovedown x = x/=(n-1-(div nn 2)) && (state!!x) == who && (state!!(x+nn)) == 0
-                      a x = take x state -- we swap the x and x+n position
-                      b x = 0:(take (nn-1) (drop (x+1) state))
-                      c x = who:(drop (x+nn+1) state)
-              eatright = [a x ++ b x | x<- [0..(n-4)], caneatright x]
-                where caneatright x = x/=((div n 2)-1) && (state!!x) == who && (state!!(x+1)) == (3-who) && (state!!(x+2)) == 0
-                      a x = take x state -- we swap the x and x+2 position and set position x+1 to 0
-                      b x = 0:0:who:(drop (x+3) state)
-              eatdown = [a x ++ b x ++ c x ++ d x | x <- [0..(n-2*nn-2)], caneatdown x]
-                where caneatdown x = x/=(n-1-(div nn 2)) && (state!!x) == who && (state!!(x+nn)) == (3-who) && (state!!(x+2*nn)) == 0
-                      a x = take x state -- we swap the x and x+2*nn position and set position x+nn to 0
-                      b x = 0:(take (nn-1) (drop (x+1) state))
-                      c x = 0:(take (nn-1) (drop (x+nn+1) state))
-                      d x = who:(drop (x+2*nn+1) state)
+movegen_a7e7 state who = if not (null newmoves) then newmoves else [state]
+        where newmoves = moveright ++ eatright ++ movedown ++ eatdown 
+                where n = length state
+                      nn = (round (sqrt (fromIntegral (length state))))
+                      moveright = [a x ++ b x | x <- [0..(n-3)], canmoveright x]
+                        where canmoveright x = x/=((div n 2)-1) && (state!!x) == who && (state!!(x+1)) == 0
+                              a x = take x state -- we swap the x and x+1 position
+                              b x = 0:who:(drop (x+2) state)
+                      movedown = [a x ++ b x ++ c x | x <- [0..(n-nn-2)], canmovedown x]
+                        where canmovedown x = x/=(n-1-(div nn 2)) && (state!!x) == who && (state!!(x+nn)) == 0
+                              a x = take x state -- we swap the x and x+n position
+                              b x = 0:(take (nn-1) (drop (x+1) state))
+                              c x = who:(drop (x+nn+1) state)
+                      eatright = [a x ++ b x | x<- [0..(n-4)], caneatright x]
+                        where caneatright x = x/=((div n 2)-1) && (state!!x) == who && (state!!(x+1)) == (3-who) && (state!!(x+2)) == 0
+                              a x = take x state -- we swap the x and x+2 position and set position x+1 to 0
+                              b x = 0:0:who:(drop (x+3) state)
+                      eatdown = [a x ++ b x ++ c x ++ d x | x <- [0..(n-2*nn-2)], caneatdown x]
+                        where caneatdown x = x/=(n-1-(div nn 2)) && (state!!x) == who && (state!!(x+nn)) == (3-who) && (state!!(x+2*nn)) == 0
+                              a x = take x state -- we swap the x and x+2*nn position and set position x+nn to 0
+                              b x = 0:(take (nn-1) (drop (x+1) state))
+                              c x = 0:(take (nn-1) (drop (x+nn+1) state))
+                              d x = who:(drop (x+2*nn+1) state)
 
 -- Eval
 -- Given a board in the good format and which colour of the pieces to move,
@@ -125,6 +128,7 @@ eval_a7e7 state
   | win_a7e7 state 2 = -2000000
   | otherwise = 0 -- todo
 
+-- Check win condition
 win_a7e7::[Int]->Int->Bool
 win_a7e7 state who = friendlypieces/=0 && (enemypieces == 0 || friendlypieces == backrank)
         where n = length state
@@ -134,6 +138,10 @@ win_a7e7 state who = friendlypieces/=0 && (enemypieces == 0 || friendlypieces ==
               backrank 
                 | who == 1 = length (filter (==who) [state!!(i + nn*(3*(div nn 2)-2-i)) | i <- [(div nn 2)-1..nn-1]])
                 | who == 2 = length (filter (==who) [(reverse state)!!(i + nn*(3*(div nn 2)-2-i)) | i <- [(div nn 2)-1..nn-1]])
+
+engine_wrapper_a7e7::[Int]->Int->Int->[Int]
+engine_wrapper_a7e7 state 1 depth = snd (max_a7e7 [(fst (engine_a7e7 x 2 depth), x) | x <- movegen_a7e7 state 1])
+engine_wrapper_a7e7 state 2 depth = snd (min_a7e7 [(fst (engine_a7e7 x 1 depth), x) | x <- map reverse (movegen_a7e7 (reverse state) 2)])
 
 -- Engine
 -- Given a state in the good format, which player to move, and the desired ply depth, invokes minimax engine
@@ -149,10 +157,13 @@ engine_a7e7 state 2 depth
   | win_a7e7 state 2 = (-2000000, state)
   | otherwise = min_a7e7 [engine_a7e7 x 1 (depth-1) | x <- map reverse (movegen_a7e7 (reverse state) 2)]
 
+-- finds maximum of a list
 max_a7e7::[(Int,[Int])]->(Int,[Int])
 max_a7e7 (x:[]) = x
 max_a7e7 (x:xs) = max x (max_a7e7 xs)
 
+-- finds minimum of a list
 min_a7e7::[(Int,[Int])]->(Int,[Int])
 min_a7e7 (x:[]) = x
 min_a7e7 (x:xs) = min x (min_a7e7 xs)
+
