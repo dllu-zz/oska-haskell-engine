@@ -7,6 +7,7 @@
 -- ["wwww","---","--","---","bbbb"]
 -- ["wwww","---","--","---","bbbb"]
 -- ["----","---","-w","-b-","b-bb"]
+-- ["-------","------","-----","----","---","--","---","----","-w---","-b----","b-bbbbb"]
 
 
 oska_a7e7::[String] -> Char -> Int -> [String]
@@ -140,30 +141,30 @@ win_a7e7 state who = friendlypieces/=0 && (enemypieces == 0 || friendlypieces ==
                 | who == 2 = length (filter (==who) [(reverse state)!!(i + nn*(3*(div nn 2)-2-i)) | i <- [(div nn 2)-1..nn-1]])
 
 engine_wrapper_a7e7::[Int]->Int->Int->[Int]
-engine_wrapper_a7e7 state 1 depth = snd (max_a7e7 [(fst (engine_a7e7 x 2 depth), x) | x <- movegen_a7e7 state 1])
-engine_wrapper_a7e7 state 2 depth = snd (min_a7e7 [(fst (engine_a7e7 x 1 depth), x) | x <- map reverse (movegen_a7e7 (reverse state) 2)])
+engine_wrapper_a7e7 state 1 depth = snd (max_a7e7 [(engine_a7e7 x 2 depth, x) | x <- movegen_a7e7 state 1])
+engine_wrapper_a7e7 state 2 depth = snd (min_a7e7 [(engine_a7e7 x 1 depth, x) | x <- map reverse (movegen_a7e7 (reverse state) 2)])
 
 -- Engine
 -- Given a state in the good format, which player to move, and the desired ply depth, invokes minimax engine
--- returns best move
-engine_a7e7::[Int]->Int->Int->(Int,[Int])
-engine_a7e7 state who 0 = (eval_a7e7 state, state)
+-- returns heuristic value of best move
+engine_a7e7::[Int]->Int->Int->Int
+engine_a7e7 state who 0 = eval_a7e7 state
 engine_a7e7 state 1 depth 
-  | win_a7e7 state 1 = (2000000, state)
-  | win_a7e7 state 2 = (-2000000, state)
+  | win_a7e7 state 1 = 2000000
+  | win_a7e7 state 2 = -2000000
   | otherwise = max_a7e7 [engine_a7e7 x 2 (depth-1) | x <- movegen_a7e7 state 1]
 engine_a7e7 state 2 depth 
-  | win_a7e7 state 1 = (2000000, state)
-  | win_a7e7 state 2 = (-2000000, state)
+  | win_a7e7 state 1 = 2000000
+  | win_a7e7 state 2 = -2000000
   | otherwise = min_a7e7 [engine_a7e7 x 1 (depth-1) | x <- map reverse (movegen_a7e7 (reverse state) 2)]
 
 -- finds maximum of a list
-max_a7e7::[(Int,[Int])]->(Int,[Int])
+max_a7e7::Ord a=>[a]->a
 max_a7e7 (x:[]) = x
 max_a7e7 (x:xs) = max x (max_a7e7 xs)
 
 -- finds minimum of a list
-min_a7e7::[(Int,[Int])]->(Int,[Int])
+min_a7e7::Ord a=>[a]->a
 min_a7e7 (x:[]) = x
 min_a7e7 (x:xs) = min x (min_a7e7 xs)
 
