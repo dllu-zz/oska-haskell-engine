@@ -16,9 +16,10 @@ oska_a7e7 state who depth
 -- furthermore, each string must only be made of characters '-', 'w', and 'b'
 valid_a7e7::[String] -> Bool
 valid_a7e7 state = checklengths state && checkcontents state
-        where checklengths x = odd (length x) && (length x) >=4 && checkeachlength x
-                where checkeachlength x = sum [abs (length (x!!i) - (expectedstringlength i))|i<-[0..(length x-1)]] == 0
-                        where expectedstringlength i = 2 + abs (i - (div (length x) 2))
+        where n = length state
+              checklengths x = odd n && n >=4 && checkeachlength x
+                where checkeachlength x = sum [abs (length (x!!i) - (expectedstringlength i))|i<-[0..(n-1)]] == 0
+                        where expectedstringlength i = 2 + abs (i - (div n 2))
               checkcontents x = sum [abs (length i - countchar i 'w' - countchar i 'b' - countchar i '-')|i<-x] == 0
                         where countchar s c = length (filter (==c) s)
 
@@ -45,5 +46,16 @@ conv_12wb_a7e7::Int -> Char
 conv_12wb_a7e7 1 = 'w'
 conv_12wb_a7e7 2 = 'b'
 conv_12wb_a7e7 0 = '-'
+conv_12wb_a7e7 _ = ' '
 
+print_a7e7::[Int] -> IO()
+print_a7e7 state = disp_a7e7 state (round (sqrt (fromIntegral (length state))))
 
+disp_a7e7::[Int] -> Int -> IO()
+disp_a7e7 [] n = putStrLn " "
+disp_a7e7 state n = do
+        putStrLn [(conv_12wb_a7e7 (state!!i)) | i <- [0..(n-1)]]
+        disp_a7e7 (drop n state) n
+
+movegen_a7e7::[Int]->[[Int]]
+movegen_a7e7 state = [state] --todo
