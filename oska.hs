@@ -9,7 +9,7 @@
 
 oska_a7e7::[String] -> Char -> Int -> [String]
 oska_a7e7 state who depth
-        | valid_a7e7 state      = []-- goodformat2badformat_a7e7 (engine_a7e7 (badformat2goodformat_a7e7 state) (conv_wb12_a7e7 who) depth)
+        | valid_a7e7 state      = goodformat2badformat_a7e7 (snd (engine_a7e7 (badformat2goodformat_a7e7 state) (conv_wb12_a7e7 who) depth))
         | otherwise             = error "Invalid state"
 
 -- a valid state must be a list of strings of valid lengths
@@ -34,9 +34,15 @@ badformat2goodformat_a7e7 state = [getpiece x y | y <-[0..(n-1)], x <-[0..(n-1)]
               getpiece x y = if okay_a7e7 x y n then conv_wb12_a7e7 (state!!(getx x y)!!(gety x y)) else -1
                 where getx x y = x+y-(div n 2)
                       gety x y = max (x - (div n 2) + 1) ((div n 2) - y)
+-- converts internal board representation to the ugly format specified in the assignment
+goodformat2badformat_a7e7::[Int] -> [String]
+goodformat2badformat_a7e7 state = [getrow i | i <-[0..(nn-2)]]
+        where n = length state
+              nn = (round (sqrt (fromIntegral (length state))))
+              getrow i = [conv_12wb_a7e7 (state!!(x+y*nn)) | x <-[0..(nn-1)], y <-[0..(nn-1)], okay_a7e7 x y nn, x+y==i+(div nn 2)]
 
 -- checks if a position x, y is a valid Oska position in a board of the good format of width n
--- for example for a a board of size 8, here the dots are false and the Ts are true.
+-- for example for a board of size 8, here the dots are false and the Ts are true.
 -- ....T...
 -- ...TT...
 -- ..TTT...
@@ -84,23 +90,51 @@ movegen_a7e7 state who = moveright ++ eatright ++ movedown ++ eatdown
         where n = length state
               nn = (round (sqrt (fromIntegral (length state))))
               moveright = [take x state ++ (0:who:(drop (x+2) state)) | x <- [0..(n-3)], canmoveright x]
-                where canmoveright x = (state!!x) == who && (state!!(x+1)) == 0
+                where canmoveright x = x/=((div n 2)-1) && (state!!x) == who && (state!!(x+1)) == 0
               movedown = [take x state ++ 0:(take (nn-1) (drop (x+1) state)) ++ who:(drop (x+nn+1) state) | x <- [0..(n-nn-2)], canmovedown x]
-                where canmovedown x = (state!!x) == who && (state!!(x+nn)) == 0
+                where canmovedown x = x/=(n-1-(div nn 2)) && (state!!x) == who && (state!!(x+nn)) == 0
               eatright = [take x state ++ (0:0:who:(drop (x+3) state)) | x<- [0..(n-4)], caneatright x]
-                where caneatright x = (state!!x) == who && (state!!(x+1)) == (3-who) && (state!!(x+2)) == 0
+                where caneatright x = x/=((div n 2)-1) && (state!!x) == who && (state!!(x+1)) == (3-who) && (state!!(x+2)) == 0
               eatdown = [take x state ++ 0:(take (nn-1) (drop (x+1) state)) ++ 0:(take (nn-1) (drop (x+nn+1) state)) ++ who:(drop (x+2*nn+1) state) | x <- [0..(n-2*nn-2)], caneatdown x]
-                where caneatdown x = (state!!x) == who && (state!!(x+nn)) == (3-who) && (state!!(x+2*nn)) == 0
+                where caneatdown x = x/=(n-1-(div nn 2)) && (state!!x) == who && (state!!(x+nn)) == (3-who) && (state!!(x+2*nn)) == 0
 
 -- Eval
 -- Given a board in the good format and which colour of the pieces to move,
 -- returns an integer that is the heuristic value of the board
-eval_a7e7::[Int]->Int->Int
-eval_a7e7 state who = 0 -- todo
+eval_a7e7::[Int]->Int
+eval_a7e7 state
+  | win_a7e7 state 1 = 2000000
+  | win_a7e7 state 2 = -2000000
+  | otherwise = 0 -- todo
+
+win_a7e7::[Int]->Int->Bool
+win_a7e7 state who = friendlypieces/=0 && (enemypieces == 0 || friendlypieces == backrank)
+        where n = length state
+              nn = (round (sqrt (fromIntegral (length state))))
+              enemypieces = length (filter (==(3-who)) state)
+              friendlypieces = length (filter (==who) state)
+              backrank 
+                | who == 1 = length (filter (==who) [state!!(i + nn*(2*nn-5-i)) | i <- [(div nn 2)-1..nn-1]])
+                | who == 2 = length (filter (==who) [(reverse state)!!(i + nn*(3*(div nn 4)-2-i)) | i <- [(div nn 2)-1..nn-1]])
 
 -- Engine
 -- Given a state in the good format, which player to move, and the desired ply depth, invokes minimax engine
 -- returns best move
-engine_a7e7::[Int]->Int->[Int]
-engine_a7e7 state who = state -- todo
+engine_a7e7::[Int]->Int->Int->(Int,[Int])
+engine_a7e7 state who 0 = (eval_a7e7 state, state)
+engine_a7e7 state 1 depth 
+  | win_a7e7 state 1 = (2000000, state)
+  | win_a7e7 state 2 = (-2000000, state)
+  | otherwise = max_a7e7 [engine_a7e7 x 2 (depth-1) | x <- movegen_a7e7 state 1]
+engine_a7e7 state 2 depth 
+  | win_a7e7 state 1 = (2000000, state)
+  | win_a7e7 state 2 = (-2000000, state)
+  | otherwise = min_a7e7 [engine_a7e7 x 1 (depth-1) | x <- map reverse (movegen_a7e7 (reverse state) 2)]
 
+max_a7e7::[(Int,[Int])]->(Int,[Int])
+max_a7e7 (x:[]) = x
+max_a7e7 (x:xs) = max x (max_a7e7 xs)
+
+min_a7e7::[(Int,[Int])]->(Int,[Int])
+min_a7e7 (x:[]) = x
+min_a7e7 (x:xs) = min x (min_a7e7 xs)
