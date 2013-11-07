@@ -5,10 +5,24 @@
 --Project 1 CPSC 312
 
 -- ["wwww","---","--","---","bbbb"]
--- ["wwww","---","--","---","bbbb"]
--- ["----","---","-w","-b-","b-bb"]
+-- ["wwwwww","-----","----","---","--","---","----","-----","bbbbbb"]
+-- ["ww--","--w","-w","-b-","b-bb"]
 -- ["-------","------","-----","----","---","--","---","----","-w---","-b----","b-bbbbb"]
 
+module Main where
+
+main = do
+  let start = ["wwwww","----","---","--","---","----","bbbbb"]
+  let d = 4;
+  testing start d
+
+testing :: [String] -> Int -> IO()
+testing start d = do
+  let a = oska_a7e7 start 'w' d
+  print_a7e7 (badformat2goodformat_a7e7 a)
+  let b = oska_a7e7 a 'b' d
+  print_a7e7 (badformat2goodformat_a7e7 b)
+  if (not (win_a7e7 (badformat2goodformat_a7e7 b) 1)) && (not (win_a7e7 (badformat2goodformat_a7e7 b) 2)) then testing b d else putStrLn "done"
 
 oska_a7e7::[String] -> Char -> Int -> [String]
 oska_a7e7 state who depth
@@ -41,7 +55,7 @@ badformat2goodformat_a7e7 state = [getpiece x y | y <-[0..(n-1)], x <-[0..(n-1)]
 goodformat2badformat_a7e7::[Int] -> [String]
 goodformat2badformat_a7e7 state = [getrow i | i <-[0..(nn-2)]]
         where n = length state
-              nn = (round (sqrt (fromIntegral (length state))))
+              nn = (round (sqrt (fromIntegral n)))
               getrow i = [conv_12wb_a7e7 (state!!(x+y*nn)) | x <-[0..(nn-1)], y <-[0..(nn-1)], okay_a7e7 x y nn, x+y==i+(div nn 2)]
 
 -- checks if a position x, y is a valid Oska position in a board of the good format of width n
@@ -95,9 +109,11 @@ disp_a7e7 state n = do
 -- Given a board in the good format and which colour of pieces to move,
 -- returns a list of boards that are reachable in one ply by the specified player
 -- assumes board is rotated such that all pieces only move right and down
+-- THERE IS A SERIOUS BUG!!!
+-- sometimes it will generate the invalid move of taking a back rank piece and going back to the start.
 movegen_a7e7::[Int]->Int->[[Int]]
 movegen_a7e7 state who = if not (null newmoves) then newmoves else [state]
-        where newmoves = moveright ++ eatright ++ movedown ++ eatdown 
+        where newmoves = eatright ++ eatdown  ++ moveright ++ movedown
                 where n = length state
                       nn = (round (sqrt (fromIntegral (length state))))
                       moveright = [a x ++ b x | x <- [0..(n-3)], canmoveright x]
@@ -127,13 +143,16 @@ eval_a7e7::[Int]->Int
 eval_a7e7 state
   | win_a7e7 state 1 = 2000000
   | win_a7e7 state 2 = -2000000
-  | otherwise = 0 -- todo
+  | otherwise = advanceness state 1 - advanceness (reverse state) 2
+        where n = length state
+              nn = (round (sqrt (fromIntegral n)))
+              advanceness etat who = sum [x+y-(div nn 2) | x<-[0..(nn-1)], y<-[0..(nn-1)], etat!!(x+nn*y)==who]
 
 -- Check win condition
 win_a7e7::[Int]->Int->Bool
 win_a7e7 state who = friendlypieces/=0 && (enemypieces == 0 || friendlypieces == backrank)
         where n = length state
-              nn = (round (sqrt (fromIntegral (length state))))
+              nn = (round (sqrt (fromIntegral n)))
               enemypieces = length (filter (==(3-who)) state)
               friendlypieces = length (filter (==who) state)
               backrank 
