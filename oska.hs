@@ -14,22 +14,22 @@
 module Main where
 
 main = do
-  let start = ["wwwww","----","---","--","---","----","bbbbb"]
+  let start = ["wwww","---","--","---","bbbb"]
   let d = 6;
   testing start d
 
 testing :: [String] -> Int -> IO()
 testing start d = do
-  --let a = oska_a7e7 start 'w' (d-3)
+  --let a = oska_a7e7 start 'w' (d-2)
   let a = oska_ab_a7e7 start 'w' d
-  putStr "W  "
-  --print (minimax_a7e7 (badformat2goodformat_a7e7 start) 1 (d-3))
-  print (alphabeta_a7e7 (badformat2goodformat_a7e7 start) 1 (-3000000) 3000000 d)
+  putStrLn "W  "
+  --print (minimax_a7e7 (badformat2goodformat_a7e7 start) 1 (d-2))
+  --print (alphabeta_a7e7 (badformat2goodformat_a7e7 start) 1 (-3000000) 3000000 d)
   print_b_a7e7 a
   --let b = oska_ab_a7e7 a 'b' d
-  let b = oska_a7e7 a 'b' (d-3)
-  putStr "B  "
-  print (minimax_a7e7 (badformat2goodformat_a7e7 a) 2 (d-3))
+  let b = oska_a7e7 a 'b' (d-2)
+  putStrLn "B  "
+  --print (minimax_a7e7 (badformat2goodformat_a7e7 a) 2 (d-2))
   --print (alphabeta_a7e7 (badformat2goodformat_a7e7 a) 2 (-3000000) 3000000 d)
   print_b_a7e7 b
   if (not (win_a7e7 (badformat2goodformat_a7e7 b) 1)) && (not (win_a7e7 (badformat2goodformat_a7e7 b) 2)) then testing b d else putStrLn "done"
@@ -191,7 +191,7 @@ eval_a7e7 state
   | otherwise = advanceness state 1 - advanceness (reverse state) 2 + mobility 1 - mobility 2
         where n = length state
               nn = (round (sqrt (fromIntegral n)))
-              advanceness etat who = sum [x+y-nn-(div nn 2) | x<-[0..(nn-1)], y<-[0..(nn-1)], etat!!(x+nn*y)==who]
+              advanceness etat who = sum [if x+y == (div (3*nn) 2) - 2 then 40 else 4*(x+y-nn-(div nn 2)) - abs (x*x-y*y)| x<-[0..(nn-1)], y<-[0..(nn-1)], etat!!(x+nn*y)==who]
               mobility 1 = mobility_a7e7 state 1
               mobility 2 = mobility_a7e7 (reverse state) 2
 
