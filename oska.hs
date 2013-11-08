@@ -1,44 +1,15 @@
-
 --Daniel Lu 75592063 a7e7
 --Brian Chau 30006118 b8z7
 
 --Project 1 CPSC 312
 
--- ["wwww","---","--","---","bbbb"]
--- ["bbbb","---","--","---","wwww"]
--- ["wwwww","----","---","--","---","----","bbbbb"]
--- ["wwwwww","-----","----","---","--","---","----","-----","bbbbbb"]
--- ["ww--","--w","-w","-b-","b-bb"]
--- ["-------","------","-----","----","---","--","---","----","-w---","-b----","b-bbbbb"]
-
-module Main where
-
-main = do
-  let start = ["wwww","---","--","---","bbbb"]
-  let d = 6;
-  testing start d
-
-testing :: [String] -> Int -> IO()
-testing start d = do
-  --let a = oska_a7e7 start 'w' (d-2)
-  let a = oska_ab_a7e7 start 'w' d
-  putStrLn "W  "
-  --print (minimax_a7e7 (badformat2goodformat_a7e7 start) 1 (d-2))
-  --print (alphabeta_a7e7 (badformat2goodformat_a7e7 start) 1 (-3000000) 3000000 d)
-  print_b_a7e7 a
-  --let b = oska_ab_a7e7 a 'b' d
-  let b = oska_a7e7 a 'b' (d-2)
-  putStrLn "B  "
-  --print (minimax_a7e7 (badformat2goodformat_a7e7 a) 2 (d-2))
-  --print (alphabeta_a7e7 (badformat2goodformat_a7e7 a) 2 (-3000000) 3000000 d)
-  print_b_a7e7 b
-  if (not (win_a7e7 (badformat2goodformat_a7e7 b) 1)) && (not (win_a7e7 (badformat2goodformat_a7e7 b) 2)) then testing b d else putStrLn "done"
-
+-- runs the oska engine with minimax search (slower)
 oska_a7e7::[String] -> Char -> Int -> [String]
 oska_a7e7 state who depth
         | valid_a7e7 state      = goodformat2badformat_a7e7 (engine_wrapper_a7e7 (badformat2goodformat_a7e7 state) (conv_wb12_a7e7 who) depth)
         | otherwise             = error "Invalid state"
 
+-- runs the oska engine with alpha-beta search (faster)
 oska_ab_a7e7::[String] -> Char -> Int -> [String]
 oska_ab_a7e7 state who depth
         | valid_a7e7 state      = goodformat2badformat_a7e7 (engine_wrapper_ab_a7e7 (badformat2goodformat_a7e7 state) (conv_wb12_a7e7 who) depth)
@@ -191,7 +162,7 @@ eval_a7e7 state
   | otherwise = advanceness state 1 - advanceness (reverse state) 2 + mobility 1 - mobility 2
         where n = length state
               nn = (round (sqrt (fromIntegral n)))
-              advanceness etat who = sum [if x+y == (div (3*nn) 2) - 2 then 40 else 4*(x+y-nn-(div nn 2)) - abs (x*x-y*y)| x<-[0..(nn-1)], y<-[0..(nn-1)], etat!!(x+nn*y)==who]
+              advanceness etat who = sum [if x+y == (div (3*nn) 2) - 2 then n else 4*(x+y-nn-(div nn 2)) - abs (x*x-y*y)| x<-[0..(nn-1)], y<-[0..(nn-1)], etat!!(x+nn*y)==who]
               mobility 1 = mobility_a7e7 state 1
               mobility 2 = mobility_a7e7 (reverse state) 2
 
@@ -265,3 +236,38 @@ min_a7e7::Ord a=>[a]->a
 min_a7e7 (x:[]) = x
 min_a7e7 (x:xs) = min x (min_a7e7 xs)
 
+-- ["wwww","---","--","---","bbbb"]
+-- ["bbbb","---","--","---","wwww"]
+-- ["wwwww","----","---","--","---","----","bbbbb"]
+-- ["wwwwww","-----","----","---","--","---","----","-----","bbbbbb"]
+-- ["ww--","--w","-w","-b-","b-bb"]
+-- ["-------","------","-----","----","---","--","---","----","-w---","-b----","b-bbbbb"]
+-- use test 1 to try minimax vs alphabeta
+-- use test 2 to try alphabeta vs minimax
+test::Int -> IO()
+test which = do
+  let start = ["wwww","---","--","---","bbbb"]
+  let d = 6;
+  testing start d which
+
+testing :: [String] -> Int -> Int -> IO()
+testing start d 1 = do
+  let a = oska_a7e7 start 'w' (d-2)
+  putStrLn "W  "
+  --print (minimax_a7e7 (badformat2goodformat_a7e7 start) 1 (d-2))
+  print_b_a7e7 a
+  let b = oska_ab_a7e7 a 'b' d
+  putStrLn "B  "
+  --print (alphabeta_a7e7 (badformat2goodformat_a7e7 a) 2 (-3000000) 3000000 d)
+  print_b_a7e7 b
+  if (not (win_a7e7 (badformat2goodformat_a7e7 b) 1)) && (not (win_a7e7 (badformat2goodformat_a7e7 b) 2)) then testing b d 1 else putStrLn "done"
+testing start d 2 = do
+  let a = oska_ab_a7e7 start 'w' d
+  putStrLn "W  "
+  --print (alphabeta_a7e7 (badformat2goodformat_a7e7 start) 1 (-3000000) 3000000 d)
+  print_b_a7e7 a
+  let b = oska_a7e7 a 'b' (d-2)
+  putStrLn "B  "
+  --print (minimax_a7e7 (badformat2goodformat_a7e7 a) 2 (d-2))
+  print_b_a7e7 b
+  if (not (win_a7e7 (badformat2goodformat_a7e7 b) 1)) && (not (win_a7e7 (badformat2goodformat_a7e7 b) 2)) then testing b d 2 else putStrLn "done"
