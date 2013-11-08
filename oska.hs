@@ -15,7 +15,7 @@ module Main where
 
 main = do
   let start = ["wwwww","----","---","--","---","----","bbbbb"]
-  let d = 7;
+  let d = 6;
   testing start d
 
 testing :: [String] -> Int -> IO()
@@ -143,7 +143,7 @@ movegen_a7e7 state who = if not (null newmoves) then newmoves else [state]
 -- returns a list of boards that are reachable in one ply by the specified player
 -- assumes board is rotated such that all pieces only move right and down
 newmoves_a7e7::[Int]->Int->[[Int]]
-newmoves_a7e7 state who = eatright ++ eatdown  ++ moveright ++ movedown
+newmoves_a7e7 state who = eatright ++ eatdown ++ movedown ++ moveright
         where n = length state
               nn = (round (sqrt (fromIntegral (length state))))
               moveright = [a x ++ b x | x <- [0..(n-3)], canmoveright x]
@@ -166,17 +166,18 @@ newmoves_a7e7 state who = eatright ++ eatdown  ++ moveright ++ movedown
                       c x = 0:(take (nn-1) (drop (x+nn+1) state))
                       d x = who:(drop (x+2*nn+1) state)
 
+-- given a state, computes the 
 mobility_a7e7::[Int]->Int->Int
-mobility_a7e7 state who = length (eatright ++ eatdown  ++ moveright ++ movedown)
+mobility_a7e7 state who = eatright + eatdown  + moveright + movedown
         where n = length state
               nn = (round (sqrt (fromIntegral (length state))))
-              moveright = [1 | x <- [0..(n-3)], canmoveright x]
+              moveright = length [1 | x <- [0..(n-3)], canmoveright x]
                 where canmoveright x = x/=((div n 2)-1) && (state!!x) == who && (state!!(x+1)) == 0
-              movedown = [1 | x <- [0..(n-nn-2)], canmovedown x]
+              movedown = length [1 | x <- [0..(n-nn-2)], canmovedown x]
                 where canmovedown x = x/=(n-1-(div nn 2)) && (state!!x) == who && (state!!(x+nn)) == 0
-              eatright = [1 | x<- [0..(n-4)], caneatright x]
+              eatright = length [1 | x<- [0..(n-4)], caneatright x]
                 where caneatright x = x/=((div n 2)-1) && ((mod (x+2) nn) == 2 + (mod x nn)) && (state!!x) == who && (state!!(x+1)) == (3-who) && (state!!(x+2)) == 0
-              eatdown = [1 | x <- [0..(n-2*nn-2)], caneatdown x]
+              eatdown = length [1 | x <- [0..(n-2*nn-2)], caneatdown x]
                 where caneatdown x = x/=(n-1-(div nn 2)) && (state!!x) == who && (state!!(x+nn)) == (3-who) && (state!!(x+2*nn)) == 0
 
 -- Eval
@@ -187,12 +188,12 @@ eval_a7e7 state
   | (win_a7e7 state 1) && (win_a7e7 state 2) = 0
   | win_a7e7 state 1 = 2000000
   | win_a7e7 state 2 = -2000000
-  | otherwise = advanceness state 1 - advanceness (reverse state) 2 + mobility 1 - mobility 2 - popcnt 1 + popcnt 2
+  | otherwise = advanceness state 1 - advanceness (reverse state) 2 + mobility 1 - mobility 2
         where n = length state
               nn = (round (sqrt (fromIntegral n)))
-              advanceness etat who = sum [x+y-(div nn 2) | x<-[0..(nn-1)], y<-[0..(nn-1)], etat!!(x+nn*y)==who]
-              mobility who = mobility_a7e7 state who
-              popcnt who = 3*(length (filter (==who) state))
+              advanceness etat who = sum [x+y-nn-(div nn 2) | x<-[0..(nn-1)], y<-[0..(nn-1)], etat!!(x+nn*y)==who]
+              mobility 1 = mobility_a7e7 state 1
+              mobility 2 = mobility_a7e7 (reverse state) 2
 
 -- Check win condition
 win_a7e7::[Int]->Int->Bool
