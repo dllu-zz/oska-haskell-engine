@@ -3,6 +3,8 @@
 
 --Project 1 CPSC 312
 
+import System.CPUTime
+import Text.Printf
 -- runs the oska engine with minimax search (slower)
 oska_a7e7::[String] -> Char -> Int -> [String]
 oska_a7e7 state who depth
@@ -255,19 +257,30 @@ testing start d 1 = do
   let a = oska_a7e7 start 'w' (d-2)
   putStrLn "W  "
   --print (minimax_a7e7 (badformat2goodformat_a7e7 start) 1 (d-2))
-  print_b_a7e7 a
+  time $ print_b_a7e7 a
   let b = oska_ab_a7e7 a 'b' d
   putStrLn "B  "
   --print (alphabeta_a7e7 (badformat2goodformat_a7e7 a) 2 (-3000000) 3000000 d)
-  print_b_a7e7 b
+  time $ print_b_a7e7 b
   if (not (win_a7e7 (badformat2goodformat_a7e7 b) 1)) && (not (win_a7e7 (badformat2goodformat_a7e7 b) 2)) then testing b d 1 else putStrLn "done"
 testing start d 2 = do
   let a = oska_ab_a7e7 start 'w' d
   putStrLn "W  "
   --print (alphabeta_a7e7 (badformat2goodformat_a7e7 start) 1 (-3000000) 3000000 d)
-  print_b_a7e7 a
+  time $ print_b_a7e7 a
   let b = oska_a7e7 a 'b' (d-2)
   putStrLn "B  "
   --print (minimax_a7e7 (badformat2goodformat_a7e7 a) 2 (d-2))
-  print_b_a7e7 b
+  time $ print_b_a7e7 b
   if (not (win_a7e7 (badformat2goodformat_a7e7 b) 1)) && (not (win_a7e7 (badformat2goodformat_a7e7 b) 2)) then testing b d 2 else putStrLn "done"
+
+-- the following function is from http://www.haskell.org/haskellwiki/Timing_computations
+-- which is licensed under: http://www.haskell.org/haskellwiki/HaskellWiki:Copyrights
+time :: IO t -> IO t
+time a = do
+  start <- getCPUTime
+  v <- a
+  end   <- getCPUTime
+  let diff = (fromIntegral (end - start)) / (10^12)
+  printf "Computation time: %0.3f sec\n" (diff :: Double)
+  return v

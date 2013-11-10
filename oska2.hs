@@ -3,7 +3,10 @@
 
 --Project 1 CPSC 312
 
+import System.CPUTime
+import Text.Printf
 import Data.Bits
+import Data.List
 
 -- runs the oska engine with minimax search (slower)
 oska_a7e7::[String] -> Char -> Int -> [String]
@@ -134,7 +137,6 @@ newmoves_a7e7 state who
                 where next x y = (b `xor` ((who .<<. (2*(x+n*y)) ) .|. ((3-who) .<<. (2*(x+n+n*y)) ) .|. (who .<<. (2*(x+2*n+n*y)) )), n)
                       caneatup x y = (b .&. ((one .|. (one .<<. (2*n) ) .|. (one .<<. (4*n) )) .<<. (2*(x+n*y)) )) == (who .<<. (2*(x+2*n+n*y)) ) .|. ((3-who) .<<. (2*(x+n+n*y)) )
 
--- given a state, computes the 
 mobility_a7e7::(Integer,Int)->Integer->Int
 mobility_a7e7 state who = length (newmoves_a7e7 state who)
 
@@ -146,9 +148,25 @@ eval_a7e7 state
   | (win_a7e7 state 1) && (win_a7e7 state 2) = 0
   | win_a7e7 state 1 = 2000000
   | win_a7e7 state 2 = -2000000
-  | otherwise = mobility_a7e7 state 1 - mobility_a7e7 state 2
+  | otherwise = advanceness 1 - advanceness 2 + mobility_a7e7 state 1 - mobility_a7e7 state 2
         where n = snd state
---advanceness etat who = sum [if x+y == (div (3*nn) 2) - 2 then n else 4*(x+y-nn-(div nn 2)) - abs (x*x-y*y)| x<-[0..(nn-1)], y<-[0..(nn-1)], etat!!(x+nn*y)==who]
+              advanceness 1 = sum [score x y | x<-[0..(n-1)], y<-[0..(n-1)], getpos state x y == 1]
+              advanceness 2 = sum [score x y | x<-[0..(n-1)], y<-[0..(n-1)], getpos state (n-x-1) (n-y-1) == 2]
+              score x y = if x+y == (div (3*n) 2) - 2 then n*n else 4*(x+y-n-(div n 2)) - abs (x*x-y*y)
+
+eval_cmp_a7e7::Integer->(Integer,Int)->(Integer,Int) ->Ordering
+eval_cmp_a7e7 1 a b
+  | evala < evalb = GT
+  | evala > evalb = LT
+  | otherwise = EQ
+        where evala = eval_a7e7 a
+              evalb = eval_a7e7 b
+eval_cmp_a7e7 2 a b
+  | evala < evalb = LT
+  | evala > evalb = GT
+  | otherwise = EQ
+        where evala = eval_a7e7 a
+              evalb = eval_a7e7 b
 
 -- Check win condition
 win_a7e7::(Integer,Int)->Integer->Bool
@@ -200,6 +218,7 @@ alphabeta_a7e7 state who a b depth
   | win_a7e7 state 2 = -2000000
   | otherwise = alphabeta_helper_a7e7 newmoves who a b depth
           where newmoves = movegen_a7e7 state who
+          --where newmoves = sortBy (eval_cmp_a7e7 who) (movegen_a7e7 state who)
 -- helper function for alpha-beta engine
 alphabeta_helper_a7e7::[(Integer,Int)]->Integer->Int->Int->Int->Int
 alphabeta_helper_a7e7 [] 1 a b depth = a
@@ -221,6 +240,13 @@ min_a7e7::Ord a=>[a]->a
 min_a7e7 (x:[]) = x
 min_a7e7 (x:xs) = min x (min_a7e7 xs)
 
+-- c-style operators for bitshifts (since `shiftL` and `shiftR` are too verbose)
+(.<<.) :: (Bits a) => a -> Int -> a
+(.<<.) a b = a `shiftL` b
+(.>>.) :: (Bits a) => a -> Int -> a
+(.>>.) a b = a `shiftR` b
+
+
 -- ["wwww","---","--","---","bbbb"]
 -- ["bbbb","---","--","---","wwww"]
 -- ["wwwww","----","---","--","---","----","bbbbb"]
@@ -232,7 +258,7 @@ min_a7e7 (x:xs) = min x (min_a7e7 xs)
 test::Int -> IO()
 test which = do
   let start = ["wwww","---","--","---","bbbb"]
-  let d = 7;
+  let d = 6;
   testing start d which
 
 testing :: [String] -> Int -> Int -> IO()
@@ -240,25 +266,31 @@ testing start d 1 = do
   let a = oska_a7e7 start 'w' (d-2)
   putStrLn "W  "
   --print (minimax_a7e7 (badformat2goodformat_a7e7 start) 1 (d-2))
-  print_b_a7e7 a
+  time $ print_b_a7e7 a
   let b = oska_ab_a7e7 a 'b' d
   putStrLn "B  "
   --print (alphabeta_a7e7 (badformat2goodformat_a7e7 a) 2 (-3000000) 3000000 d)
-  print_b_a7e7 b
+  time $ print_b_a7e7 b
   if (not (win_a7e7 (badformat2goodformat_a7e7 b) 1)) && (not (win_a7e7 (badformat2goodformat_a7e7 b) 2)) then testing b d 1 else putStrLn "done"
 testing start d 2 = do
   let a = oska_ab_a7e7 start 'w' d
   putStrLn "W  "
   --print (alphabeta_a7e7 (badformat2goodformat_a7e7 start) 1 (-3000000) 3000000 d)
-  print_b_a7e7 a
+  time $ print_b_a7e7 a
   let b = oska_a7e7 a 'b' (d-2)
   putStrLn "B  "
   --print (minimax_a7e7 (badformat2goodformat_a7e7 a) 2 (d-2))
-  print_b_a7e7 b
+  time $ print_b_a7e7 b
   if (not (win_a7e7 (badformat2goodformat_a7e7 b) 1)) && (not (win_a7e7 (badformat2goodformat_a7e7 b) 2)) then testing b d 2 else putStrLn "done"
 
--- c-style operators for bitshifts (since `shiftL` and `shiftR` are too verbose)
-(.<<.) :: (Bits a) => a -> Int -> a
-(.<<.) a b = a `shiftL` b
-(.>>.) :: (Bits a) => a -> Int -> a
-(.>>.) a b = a `shiftR` b
+
+-- the following function is from http://www.haskell.org/haskellwiki/Timing_computations
+-- which is licensed under: http://www.haskell.org/haskellwiki/HaskellWiki:Copyrights
+time :: IO t -> IO t
+time a = do
+  start <- getCPUTime
+  v <- a
+  end   <- getCPUTime
+  let diff = (fromIntegral (end - start)) / (10^12)
+  printf "Computation time: %0.3f sec\n" (diff :: Double)
+  return v
