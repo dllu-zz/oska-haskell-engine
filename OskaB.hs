@@ -2,28 +2,26 @@
 --Brian Chau 30006118 b8z7
 
 --Project 1 CPSC 312
+-- This file differs from Oska.hs in that it uses a bitboard representation.
 
-import System.CPUTime
-import Text.Printf
+module OskaB where
 import Data.Bits
-import Data.List
-
 -- runs the oska engine with minimax search (slower)
-oska_a7e7::[String] -> Char -> Int -> [String]
-oska_a7e7 state who depth
-        | valid_a7e7 state      = goodformat2badformat_a7e7 (engine_wrapper_a7e7 (badformat2goodformat_a7e7 state) (conv_wb12_a7e7 who) depth)
+oska_b8z7::[String] -> Char -> Int -> [String]
+oska_b8z7 state who depth
+        | valid_b8z7 state      = goodformat2badformat_b8z7 (engine_wrapper_b8z7 (badformat2goodformat_b8z7 state) (conv_wb12_b8z7 who) depth)
         | otherwise             = error "Invalid state"
 
 -- runs the oska engine with alpha-beta search (faster)
-oska_ab_a7e7::[String] -> Char -> Int -> [String]
-oska_ab_a7e7 state who depth
-        | valid_a7e7 state      = goodformat2badformat_a7e7 (engine_wrapper_ab_a7e7 (badformat2goodformat_a7e7 state) (conv_wb12_a7e7 who) depth)
+oska_ab_b8z7::[String] -> Char -> Int -> [String]
+oska_ab_b8z7 state who depth
+        | valid_b8z7 state      = goodformat2badformat_b8z7 (engine_wrapper_ab_b8z7 (badformat2goodformat_b8z7 state) (conv_wb12_b8z7 who) depth)
         | otherwise             = error "Invalid state"
 
 -- a valid state must be a list of strings of valid lengths
 -- furthermore, each string must only be made of characters '-', 'w', and 'b'
-valid_a7e7::[String] -> Bool
-valid_a7e7 state = checklengths state && checkcontents state
+valid_b8z7::[String] -> Bool
+valid_b8z7 state = checklengths state && checkcontents state
         where n = length state
               checklengths x = odd n && n >=4 && checkeachlength x
                 where checkeachlength x = sum [abs (length (x!!i) - (expectedstringlength i))|i<-[0..(n-1)]] == 0
@@ -36,18 +34,18 @@ valid_a7e7 state = checklengths state && checkcontents state
 -- such that white pieces can only move down and right
 -- white pieces are changed to 1
 -- black pieces are changed to 2
-badformat2goodformat_a7e7::[String] -> (Integer,Int)
-badformat2goodformat_a7e7 state = (sum [(getpiece x y) `shiftL` (2*(x+n*y)) | y <-[0..(n-1)], x <-[0..(n-1)]], n)
+badformat2goodformat_b8z7::[String] -> (Integer,Int)
+badformat2goodformat_b8z7 state = (sum [(getpiece x y) `shiftL` (2*(x+n*y)) | y <-[0..(n-1)], x <-[0..(n-1)]], n)
         where n = (length (state!!0))*2 - 2
-              getpiece x y = if okay_a7e7 x y n then conv_wb12_a7e7 (state!!(getx x y)!!(gety x y)) else 3
+              getpiece x y = if okay_b8z7 x y n then conv_wb12_b8z7 (state!!(getx x y)!!(gety x y)) else 3
                 where getx x y = x+y-(div n 2)
                       gety x y = max (x - (div n 2) + 1) ((div n 2) - y)
 -- converts internal board representation to the ugly format specified in the assignment
-goodformat2badformat_a7e7::(Integer,Int) -> [String]
-goodformat2badformat_a7e7 state = [getrow i | i <-[0..(n-2)]]
+goodformat2badformat_b8z7::(Integer,Int) -> [String]
+goodformat2badformat_b8z7 state = [getrow i | i <-[0..(n-2)]]
         where n = snd state
-              getrow i = [conv_12wb_a7e7 (getpos state x y) | x <-[0..(n-1)], y <-[0..(n-1)], okay_a7e7 x y n, x+y==i+(div n 2)]
-
+              getrow i = [conv_12wb_b8z7 (getpos state x y) | x <-[0..(n-1)], y <-[0..(n-1)], okay_b8z7 x y n, x+y==i+(div n 2)]
+-- gets the piece at the specified position in a bitboard state
 getpos::(Integer,Int) -> Int -> Int -> Integer
 getpos state x y = (bitboard .&. (3 .<<. (2*(x+y*n)))) .>>. (2*(x+y*n))
         where n = snd state
@@ -62,49 +60,49 @@ getpos state x y = (bitboard .&. (3 .<<. (2*(x+y*n)))) .>>. (2*(x+y*n))
 -- ...TTT..
 -- ...TT...
 -- ...T....
-okay_a7e7::Int -> Int -> Int -> Bool
-okay_a7e7 x y n = triangles && squares
+okay_b8z7::Int -> Int -> Int -> Bool
+okay_b8z7 x y n = triangles && squares
         where triangles = (x+y) >= (div n 2) && (x+y) <= (2*n - 2 - (div n 2))
               squares = not (x<=a && y>=b) && not (x>=b && y<=a)
                 where a = (div n 2) - 2
                       b = (div n 2) + 1
 
 -- these functions are self-explanatory
-conv_wb12_a7e7::Char -> Integer
-conv_wb12_a7e7 'w' = 1
-conv_wb12_a7e7 'b' = 2
-conv_wb12_a7e7 '-' = 0
+conv_wb12_b8z7::Char -> Integer
+conv_wb12_b8z7 'w' = 1
+conv_wb12_b8z7 'b' = 2
+conv_wb12_b8z7 '-' = 0
 
-conv_12wb_a7e7::Integer -> Char
-conv_12wb_a7e7 1 = 'w'
-conv_12wb_a7e7 2 = 'b'
-conv_12wb_a7e7 0 = '-'
-conv_12wb_a7e7 _ = ' '
+conv_12wb_b8z7::Integer -> Char
+conv_12wb_b8z7 1 = 'w'
+conv_12wb_b8z7 2 = 'b'
+conv_12wb_b8z7 0 = '-'
+conv_12wb_b8z7 _ = ' '
 
 -- displays a state in the bad format
-print_b_a7e7::[String] -> IO()
-print_b_a7e7 state = disp_b_a7e7 state (length state)
+print_b_b8z7::[String] -> IO()
+print_b_b8z7 state = disp_b_b8z7 state (length state)
 
 -- displays a state in the bad format, given the length of the board
-disp_b_a7e7::[String] -> Int -> IO()
-disp_b_a7e7 [] n = putStrLn " "
-disp_b_a7e7 (x:xs) n = do
+disp_b_b8z7::[String] -> Int -> IO()
+disp_b_b8z7 [] n = putStrLn " "
+disp_b_b8z7 (x:xs) n = do
         putStr [' ' | i <- [1..n - (length x)]]
         putStrLn (concat [c:' ':[] | c <- x])
-        disp_b_a7e7 xs n
+        disp_b_b8z7 xs n
 
 -- Move generator wrapper
 -- If there are no legal moves, outputs original position
-movegen_a7e7::(Integer,Int)->Integer->[(Integer,Int)]
-movegen_a7e7 state who = if not (null newmoves) then newmoves else [state]
-        where newmoves = newmoves_a7e7 state who
+movegen_b8z7::(Integer,Int)->Integer->[(Integer,Int)]
+movegen_b8z7 state who = if not (null newmoves) then newmoves else [state]
+        where newmoves = newmoves_b8z7 state who
 
 -- Move generator
 -- Given a board in the good format and which colour of pieces to move,
 -- returns a list of boards that are reachable in one ply by the specified player.
 -- Thanks to my excellent choicoe of variable names, code should be self-explanatory :D
-newmoves_a7e7::(Integer,Int)->Integer->[(Integer,Int)]
-newmoves_a7e7 state who 
+newmoves_b8z7::(Integer,Int)->Integer->[(Integer,Int)]
+newmoves_b8z7 state who 
   | who == 1 = eatright ++ eatdown ++ movedown ++ moveright
   | who == 2 = eatleft ++ eatup ++ moveup ++ moveleft
         where n = snd state -- the size of the bitboard
@@ -137,40 +135,27 @@ newmoves_a7e7 state who
                 where next x y = (b `xor` ((who .<<. (2*(x+n*y)) ) .|. ((3-who) .<<. (2*(x+n+n*y)) ) .|. (who .<<. (2*(x+2*n+n*y)) )), n)
                       caneatup x y = (b .&. ((one .|. (one .<<. (2*n) ) .|. (one .<<. (4*n) )) .<<. (2*(x+n*y)) )) == (who .<<. (2*(x+2*n+n*y)) ) .|. ((3-who) .<<. (2*(x+n+n*y)) )
 
-mobility_a7e7::(Integer,Int)->Integer->Int
-mobility_a7e7 state who = length (newmoves_a7e7 state who)
+-- the number of legal moves that can be made
+mobility_b8z7::(Integer,Int)->Integer->Int
+mobility_b8z7 state who = length (newmoves_b8z7 state who)
 
 -- Eval
 -- Given a board in the good format and which colour of the pieces to move,
 -- returns an (integer,Int) that is the heuristic value of the board
-eval_a7e7::(Integer,Int)->Int
-eval_a7e7 state
-  | (win_a7e7 state 1) && (win_a7e7 state 2) = 0
-  | win_a7e7 state 1 = 2000000
-  | win_a7e7 state 2 = -2000000
-  | otherwise = advanceness 1 - advanceness 2 + mobility_a7e7 state 1 - mobility_a7e7 state 2
+eval_b8z7::(Integer,Int)->Int
+eval_b8z7 state
+  | (win_b8z7 state 1) && (win_b8z7 state 2) = 0
+  | win_b8z7 state 1 = 2000000
+  | win_b8z7 state 2 = -2000000
+  | otherwise = advanceness 1 - advanceness 2 + mobility_b8z7 state 1 - mobility_b8z7 state 2
         where n = snd state
               advanceness 1 = sum [score x y | x<-[0..(n-1)], y<-[0..(n-1)], getpos state x y == 1]
               advanceness 2 = sum [score x y | x<-[0..(n-1)], y<-[0..(n-1)], getpos state (n-x-1) (n-y-1) == 2]
-              score x y = if x+y == (div (3*n) 2) - 2 then n*n else 4*(x+y-n-(div n 2)) - abs (x*x-y*y)
-
-eval_cmp_a7e7::Integer->(Integer,Int)->(Integer,Int) ->Ordering
-eval_cmp_a7e7 1 a b
-  | evala < evalb = GT
-  | evala > evalb = LT
-  | otherwise = EQ
-        where evala = eval_a7e7 a
-              evalb = eval_a7e7 b
-eval_cmp_a7e7 2 a b
-  | evala < evalb = LT
-  | evala > evalb = GT
-  | otherwise = EQ
-        where evala = eval_a7e7 a
-              evalb = eval_a7e7 b
+              score x y = if x+y == (div (3*n) 2) - 2 then n*n else 4*(x+y-n-(div n 2)) - abs (x-y)
 
 -- Check win condition
-win_a7e7::(Integer,Int)->Integer->Bool
-win_a7e7 state who = friendlypieces/=0 && (enemypieces == 0 || friendlypieces == backrank)
+win_b8z7::(Integer,Int)->Integer->Bool
+win_b8z7 state who = friendlypieces/=0 && (enemypieces == 0 || friendlypieces == backrank)
         where n = snd state
               bitboard = fst state
               enemypieces = length (filter (==(3-who)) pieces)
@@ -180,117 +165,67 @@ win_a7e7 state who = friendlypieces/=0 && (enemypieces == 0 || friendlypieces ==
                 | who == 1 = length (filter (==who) [getpos state x y | x <-[0..(n-1)], y <-[0..(n-1)], x+y == (div (3*n) 2) - 2])
                 | who == 2 = length (filter (==who) [getpos state x y | x <-[0..(n-1)], y <-[0..(n-1)], x+y == (div n 2)])
 
-engine_wrapper_a7e7::(Integer,Int)->Integer->Int->(Integer,Int)
-engine_wrapper_a7e7 state who depth = snd (maxormin [(minimax_a7e7 x (3-who) depth, x) | x <- movegen_a7e7 state who])
+engine_wrapper_b8z7::(Integer,Int)->Integer->Int->(Integer,Int)
+engine_wrapper_b8z7 state who depth = snd (maxormin [(minimax_b8z7 x (3-who) depth, x) | x <- movegen_b8z7 state who])
         where maxormin
-                | who == 1 = max_a7e7
-                | who == 2 = min_a7e7
+                | who == 1 = max_b8z7
+                | who == 2 = min_b8z7
 
-engine_wrapper_ab_a7e7::(Integer,Int)->Integer->Int->(Integer,Int)
-engine_wrapper_ab_a7e7 state who depth = snd (maxormin [(alphabeta_a7e7 x (3-who) (-3000000) 3000000 depth, x) | x <- movegen_a7e7 state who])
+engine_wrapper_ab_b8z7::(Integer,Int)->Integer->Int->(Integer,Int)
+engine_wrapper_ab_b8z7 state who depth = snd (maxormin [(alphabeta_b8z7 x (3-who) (-3000000) 3000000 depth, x) | x <- movegen_b8z7 state who])
         where maxormin
-                | who == 1 = max_a7e7
-                | who == 2 = min_a7e7
+                | who == 1 = max_b8z7
+                | who == 2 = min_b8z7
 
 -- Minimax engine
 -- Given a state in the good format, which player to move, and the desired ply depth, invokes minimax engine
 -- returns heuristic value of best move
-minimax_a7e7::(Integer,Int)->Integer->Int->Int
-minimax_a7e7 state who 0 = eval_a7e7 state
-minimax_a7e7 state who depth 
-  | (win_a7e7 state 1) && (win_a7e7 state 2) = 0
-  | win_a7e7 state 1 = 2000000
-  | win_a7e7 state 2 = -2000000
-  | otherwise = maxormin [minimax_a7e7 x (3-who) (depth-1) | x <- newmoves]
+minimax_b8z7::(Integer,Int)->Integer->Int->Int
+minimax_b8z7 state who 0 = eval_b8z7 state
+minimax_b8z7 state who depth 
+  | (win_b8z7 state 1) && (win_b8z7 state 2) = 0
+  | win_b8z7 state 1 = 2000000
+  | win_b8z7 state 2 = -2000000
+  | otherwise = maxormin [minimax_b8z7 x (3-who) (depth-1) | x <- newmoves]
           where maxormin
-                  | who == 1 = max_a7e7
-                  | who == 2 = min_a7e7
-                newmoves = movegen_a7e7 state who
+                  | who == 1 = max_b8z7
+                  | who == 2 = min_b8z7
+                newmoves = movegen_b8z7 state who
 
 -- Alpha-beta engine
 -- Given a state in the good format, which player to move, and the desired ply depth, invokes alpha-beta engine
 -- returns heuristic value of best move
-alphabeta_a7e7::(Integer,Int)->Integer->Int->Int->Int->Int
-alphabeta_a7e7 state who a b 0 = eval_a7e7 state
-alphabeta_a7e7 state who a b depth
-  | (win_a7e7 state 1) && (win_a7e7 state 2) = 0
-  | win_a7e7 state 1 = 2000000
-  | win_a7e7 state 2 = -2000000
-  | otherwise = alphabeta_helper_a7e7 newmoves who a b depth
-          where newmoves = movegen_a7e7 state who
-          --where newmoves = sortBy (eval_cmp_a7e7 who) (movegen_a7e7 state who)
+alphabeta_b8z7::(Integer,Int)->Integer->Int->Int->Int->Int
+alphabeta_b8z7 state who a b 0 = eval_b8z7 state
+alphabeta_b8z7 state who a b depth
+  | (win_b8z7 state 1) && (win_b8z7 state 2) = 0
+  | win_b8z7 state 1 = 2000000
+  | win_b8z7 state 2 = -2000000
+  | otherwise = alphabeta_helper_b8z7 newmoves who a b depth
+          where newmoves = movegen_b8z7 state who
 -- helper function for alpha-beta engine
-alphabeta_helper_a7e7::[(Integer,Int)]->Integer->Int->Int->Int->Int
-alphabeta_helper_a7e7 [] 1 a b depth = a
-alphabeta_helper_a7e7 [] 2 a b depth = b
-alphabeta_helper_a7e7 (x:xs) 1 a b depth = if b <= aa then aa else (alphabeta_helper_a7e7 xs 1 aa b depth)
+alphabeta_helper_b8z7::[(Integer,Int)]->Integer->Int->Int->Int->Int
+alphabeta_helper_b8z7 [] 1 a b depth = a
+alphabeta_helper_b8z7 [] 2 a b depth = b
+alphabeta_helper_b8z7 (x:xs) 1 a b depth = if b <= aa then aa else (alphabeta_helper_b8z7 xs 1 aa b depth)
           where aa = max a search
-                search = (alphabeta_a7e7 x 2 a b (depth-1))
-alphabeta_helper_a7e7 (x:xs) 2 a b depth = if bb <= a then bb else (alphabeta_helper_a7e7 xs 2 a bb depth)
+                search = (alphabeta_b8z7 x 2 a b (depth-1))
+alphabeta_helper_b8z7 (x:xs) 2 a b depth = if bb <= a then bb else (alphabeta_helper_b8z7 xs 2 a bb depth)
           where bb = min b search
-                search = (alphabeta_a7e7 x 1 a b (depth-1))
+                search = (alphabeta_b8z7 x 1 a b (depth-1))
 
 -- finds maximum of a list
-max_a7e7::Ord a=>[a]->a
-max_a7e7 (x:[]) = x
-max_a7e7 (x:xs) = max x (max_a7e7 xs)
+max_b8z7::Ord a=>[a]->a
+max_b8z7 (x:[]) = x
+max_b8z7 (x:xs) = max x (max_b8z7 xs)
 
 -- finds minimum of a list
-min_a7e7::Ord a=>[a]->a
-min_a7e7 (x:[]) = x
-min_a7e7 (x:xs) = min x (min_a7e7 xs)
+min_b8z7::Ord a=>[a]->a
+min_b8z7 (x:[]) = x
+min_b8z7 (x:xs) = min x (min_b8z7 xs)
 
 -- c-style operators for bitshifts (since `shiftL` and `shiftR` are too verbose)
 (.<<.) :: (Bits a) => a -> Int -> a
 (.<<.) a b = a `shiftL` b
 (.>>.) :: (Bits a) => a -> Int -> a
 (.>>.) a b = a `shiftR` b
-
-
--- ["wwww","---","--","---","bbbb"]
--- ["bbbb","---","--","---","wwww"]
--- ["wwwww","----","---","--","---","----","bbbbb"]
--- ["wwwwww","-----","----","---","--","---","----","-----","bbbbbb"]
--- ["ww--","--w","-w","-b-","b-bb"]
--- ["-------","------","-----","----","---","--","---","----","-w---","-b----","b-bbbbb"]
--- use test 1 to try minimax vs alphabeta
--- use test 2 to try alphabeta vs minimax
-test::Int -> IO()
-test which = do
-  let start = ["wwww","---","--","---","bbbb"]
-  let d = 6;
-  testing start d which
-
-testing :: [String] -> Int -> Int -> IO()
-testing start d 1 = do
-  let a = oska_a7e7 start 'w' (d-2)
-  putStrLn "W  "
-  --print (minimax_a7e7 (badformat2goodformat_a7e7 start) 1 (d-2))
-  time $ print_b_a7e7 a
-  let b = oska_ab_a7e7 a 'b' d
-  putStrLn "B  "
-  --print (alphabeta_a7e7 (badformat2goodformat_a7e7 a) 2 (-3000000) 3000000 d)
-  time $ print_b_a7e7 b
-  if (not (win_a7e7 (badformat2goodformat_a7e7 b) 1)) && (not (win_a7e7 (badformat2goodformat_a7e7 b) 2)) then testing b d 1 else putStrLn "done"
-testing start d 2 = do
-  let a = oska_ab_a7e7 start 'w' d
-  putStrLn "W  "
-  --print (alphabeta_a7e7 (badformat2goodformat_a7e7 start) 1 (-3000000) 3000000 d)
-  time $ print_b_a7e7 a
-  let b = oska_a7e7 a 'b' (d-2)
-  putStrLn "B  "
-  --print (minimax_a7e7 (badformat2goodformat_a7e7 a) 2 (d-2))
-  time $ print_b_a7e7 b
-  if (not (win_a7e7 (badformat2goodformat_a7e7 b) 1)) && (not (win_a7e7 (badformat2goodformat_a7e7 b) 2)) then testing b d 2 else putStrLn "done"
-
-
--- the following function is from http://www.haskell.org/haskellwiki/Timing_computations
--- which is licensed under: http://www.haskell.org/haskellwiki/HaskellWiki:Copyrights
-time :: IO t -> IO t
-time a = do
-  start <- getCPUTime
-  v <- a
-  end   <- getCPUTime
-  let diff = (fromIntegral (end - start)) / (10^12)
-  printf "Computation time: %0.3f sec\n" (diff :: Double)
-  return v
